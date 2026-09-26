@@ -35,6 +35,7 @@ CARD_FIELDS = (
 )
 VALID_KEYS = {metric[0] for metric in METRICS}
 DEFAULT_OPENAI_MODEL = "gpt-6-astra"
+AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
 VALID_REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 
 QuestionKey = Literal[
@@ -201,16 +202,38 @@ def _valid_draft(draft: Any) -> bool:
     return isinstance(draft, str) and bool(draft.strip()) and len(draft) <= MAX_DRAFT_LENGTH
 
 
+def _gateway_key() -> str:
+    return (
+        os.getenv("AI_GATEWAY_API_KEY", "").strip()
+        or os.getenv("VERCEL_OIDC_TOKEN", "").strip()
+    )
+
+
+def _uses_gateway() -> bool:
+    return not os.getenv("OPENAI_API_KEY", "").strip() and bool(_gateway_key())
+
+
+def _model_name() -> str:
+    model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
+    if _uses_gateway():
+        return model if "/" in model else f"openai/{model}"
+    return model.removeprefix("openai/")
+
+
 def _client() -> OpenAI | None:
     if os.getenv("AI_MODE", "").strip().casefold() == "fallback":
         return None
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    direct_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = direct_key or _gateway_key()
     if not api_key:
         return None
     try:
         timeout = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "120"))
         timeout = min(max(timeout, 1.0), 180.0)
-        return OpenAI(api_key=api_key, timeout=timeout, max_retries=0)
+        options = {"api_key": api_key, "timeout": timeout, "max_retries": 0}
+        if not direct_key:
+            options["base_url"] = AI_GATEWAY_BASE_URL
+        return OpenAI(**options)
     except (TypeError, ValueError):
         return None
 
@@ -219,17 +242,20 @@ def runtime_status() -> dict[str, str]:
     """Return safe AI configuration diagnostics without exposing credentials."""
     forced_fallback = os.getenv("AI_MODE", "").strip().casefold() == "fallback"
     has_api_key = bool(os.getenv("OPENAI_API_KEY", "").strip())
+    has_gateway_key = bool(_gateway_key())
     if forced_fallback:
-        mode, reason = "fallback", "forced_by_ai_mode"
-    elif not has_api_key:
-        mode, reason = "fallback", "missing_api_key"
+        mode, reason, provider = "fallback", "forced_by_ai_mode", "local"
+    elif has_api_key:
+        mode, reason, provider = "openai", "configured", "openai"
+    elif has_gateway_key:
+        mode, reason, provider = "openai", "configured", "vercel_gateway"
     else:
-        mode, reason = "openai", "configured"
+        mode, reason, provider = "fallback", "missing_credentials", "local"
     return {
         "ai_mode": mode,
         "ai_reason": reason,
-        "ai_model": os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
-        or DEFAULT_OPENAI_MODEL,
+        "ai_model": _model_name(),
+        "ai_provider": provider,
     }
 
 
@@ -257,8 +283,7 @@ def _ask_model(
         return None
     try:
         response = client.responses.parse(
-            model=os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
-            or DEFAULT_OPENAI_MODEL,
+            model=_model_name(),
             reasoning={
                 "effort": reasoning_effort
                 if reasoning_effort in VALID_REASONING_EFFORTS

@@ -16,6 +16,7 @@ def test_health_and_home(client):
         "ai_mode": "fallback",
         "ai_reason": "forced_by_ai_mode",
         "ai_model": "gpt-6-astra",
+        "ai_provider": "local",
     }
     home = client.get("/")
     assert home.status_code == 200

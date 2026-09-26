@@ -87,7 +87,7 @@ BUILD_CARD_PROMPT — системный промпт для сборки кар
 Реализуй в core/ai.py настоящие вызовы модели.
 
 Добавь внутреннюю функцию _call_model(system_prompt, user_content) -> str:
-- Клиент OpenAI, ключ и модель из переменных окружения OPENAI_API_KEY и OPENAI_MODEL
+- Клиент OpenAI; модель из `OPENAI_MODEL`, аутентификация через `OPENAI_API_KEY` или Vercel AI Gateway (`AI_GATEWAY_API_KEY`/автоматический `VERCEL_OIDC_TOKEN`)
 - Таймаут из REQUEST_TIMEOUT_SECONDS, по умолчанию 30
 - При любой ошибке (нет ключа, сеть, таймаут, ошибка API) выбрасывает LLMError
 

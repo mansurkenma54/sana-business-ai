@@ -17,7 +17,7 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
   <img alt="OpenAI Responses API" src="https://img.shields.io/badge/OpenAI-Responses_API-111827?logo=openai&logoColor=white">
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Neon-4169e1?logo=postgresql&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-32_passed-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-33_passed-16a34a">
 </p>
 
 ![Главная страница SaNa](docs/images/sana-home.png)
@@ -182,7 +182,7 @@ flowchart TB
 
 - Python **3.11+**;
 - Node.js **20+** и npm;
-- OpenAI API key — необязателен: без него работает fallback;
+- OpenAI API key — необязателен: Vercel использует AI Gateway через OIDC, локально без ключа работает fallback;
 - PostgreSQL/Neon — необязателен: без него данные сохраняются локально.
 
 ### Windows PowerShell
@@ -244,6 +244,7 @@ Production-сборка создаётся командой `npm run build` и �
 | Переменная | Обязательна | Назначение |
 | --- | :---: | --- |
 | `OPENAI_API_KEY` | Нет | Включает реальные AI-ответы |
+| `AI_GATEWAY_API_KEY` | Нет | Vercel AI Gateway для локального запуска; в production вместо него автоматически используется OIDC |
 | `OPENAI_MODEL` | Нет | Модель; значение проекта по умолчанию — `gpt-6-astra` |
 | `OPENAI_REASONING_EFFORT` | Нет | `medium`, `high`, `xhigh` или `max` |
 | `OPENAI_MAX_OUTPUT_TOKENS` | Нет | Ограничение токенов ответа, по умолчанию 6000 |
@@ -308,7 +309,7 @@ AI_MODE=fallback
 
 В этом режиме полный сценарий доступен без OpenAI: используются локальные вопросы, варианты ответов и безопасная сборка карточки из введённых фактов.
 
-Для реальных AI-ответов укажите `OPENAI_API_KEY` в `.env` и оставьте `AI_MODE=` пустым. `GET /api/health` безопасно показывает `ai_mode`, `ai_reason` и `ai_model`, но никогда не возвращает ключ.
+Для реальных AI-ответов локально укажите `OPENAI_API_KEY` или `AI_GATEWAY_API_KEY` в `.env` и оставьте `AI_MODE=` пустым. На Vercel используется автоматически обновляемый `VERCEL_OIDC_TOKEN`; вручную его сохранять не нужно. `GET /api/health` безопасно показывает режим, провайдера и модель, но никогда не возвращает ключ или токен.
 
 ## Автоматические проверки
 
@@ -319,7 +320,7 @@ python -m pytest -q
 Ожидаемый результат:
 
 ```text
-32 passed
+33 passed
 ```
 
 Дополнительные проверки:
@@ -332,7 +333,7 @@ curl http://127.0.0.1:8000/api/health
 Ожидаемый health-check при Neon/PostgreSQL:
 
 ```json
-{"status":"ok","storage":"postgresql","ai_mode":"openai","ai_reason":"configured","ai_model":"gpt-6-astra"}
+{"status":"ok","storage":"postgresql","ai_mode":"openai","ai_reason":"configured","ai_model":"openai/gpt-6-astra","ai_provider":"vercel_gateway"}
 ```
 
 ## Основные API-методы
@@ -368,7 +369,7 @@ Hackalem/
 ├── frontend/
 │   ├── src/App.jsx             # интерфейс и пользовательские сценарии
 │   └── src/styles.css          # адаптивный дизайн SaNa
-├── tests/                      # 32 автоматических проверок
+├── tests/                      # 33 автоматических проверок
 ├── docs/                       # контракт, аудит кейса и документация
 ├── data/                       # синтетические примеры, не production-данные
 ├── api/index.py                # входная точка Vercel
@@ -393,7 +394,7 @@ Hackalem/
 
 Рабочая версия: **<https://sana-ai-platform.vercel.app>**
 
-Vercel выполняет `npm run build`, публикует React-сборку из `app/static/` и направляет API-запросы в `api/index.py`. Для production необходимо задать `OPENAI_API_KEY` и `DATABASE_URL` в переменных окружения проекта Vercel.
+Vercel выполняет `npm run build`, публикует React-сборку из `app/static/` и направляет API-запросы в `api/index.py`. AI работает через Vercel AI Gateway и автоматически выдаваемый OIDC-токен; при необходимости прямой `OPENAI_API_KEY` имеет приоритет. Для постоянного хранения production необходимо подключить Neon/PostgreSQL, чтобы проект получил `DATABASE_URL`.
 
 ## Ограничения MVP
 

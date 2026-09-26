@@ -3,6 +3,33 @@ from types import SimpleNamespace
 from core import ai
 
 
+def test_vercel_oidc_uses_ai_gateway_without_manual_api_key(monkeypatch):
+    captured = {}
+    fake_client = object()
+
+    def fake_openai(**kwargs):
+        captured.update(kwargs)
+        return fake_client
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("AI_GATEWAY_API_KEY", raising=False)
+    monkeypatch.setenv("VERCEL_OIDC_TOKEN", "temporary-oidc-token")
+    monkeypatch.delenv("AI_MODE", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.setattr(ai, "OpenAI", fake_openai)
+
+    assert ai._client() is fake_client
+    assert captured["api_key"] == "temporary-oidc-token"
+    assert captured["base_url"] == ai.AI_GATEWAY_BASE_URL
+    assert ai._model_name() == "openai/gpt-6-astra"
+    assert ai.runtime_status() == {
+        "ai_mode": "openai",
+        "ai_reason": "configured",
+        "ai_model": "openai/gpt-6-astra",
+        "ai_provider": "vercel_gateway",
+    }
+
+
 def test_responses_api_uses_best_model_reasoning_and_structured_output(monkeypatch):
     captured = {}
     parsed = ai.AnalyzeModelResponse(
