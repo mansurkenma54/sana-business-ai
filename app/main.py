@@ -47,6 +47,17 @@ app.include_router(account_router)
 
 
 @app.middleware("http")
+async def vercel_oidc_context(request: Request, call_next):
+    binding = ai.bind_request_oidc_token(
+        request.headers.get("x-vercel-oidc-token", "")
+    )
+    try:
+        return await call_next(request)
+    finally:
+        ai.reset_request_oidc_token(binding)
+
+
+@app.middleware("http")
 async def account_session(request: Request, call_next):
     request.state.user = accounts.current(request.cookies.get(COOKIE, ""))
     path = request.url.path

@@ -17,7 +17,7 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
   <img alt="OpenAI Responses API" src="https://img.shields.io/badge/OpenAI-Responses_API-111827?logo=openai&logoColor=white">
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Neon-4169e1?logo=postgresql&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-33_passed-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-34_passed-16a34a">
 </p>
 
 ![Главная страница SaNa](docs/images/sana-home.png)
@@ -320,7 +320,7 @@ python -m pytest -q
 Ожидаемый результат:
 
 ```text
-33 passed
+34 passed
 ```
 
 Дополнительные проверки:
@@ -369,7 +369,7 @@ Hackalem/
 ├── frontend/
 │   ├── src/App.jsx             # интерфейс и пользовательские сценарии
 │   └── src/styles.css          # адаптивный дизайн SaNa
-├── tests/                      # 33 автоматических проверок
+├── tests/                      # 34 автоматических проверок
 ├── docs/                       # контракт, аудит кейса и документация
 ├── data/                       # синтетические примеры, не production-данные
 ├── api/index.py                # входная точка Vercel

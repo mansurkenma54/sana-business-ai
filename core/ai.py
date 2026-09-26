@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from contextvars import ContextVar, Token
 from typing import Any, Literal, TypeVar
 
 from dotenv import load_dotenv
@@ -37,6 +38,7 @@ VALID_KEYS = {metric[0] for metric in METRICS}
 DEFAULT_OPENAI_MODEL = "gpt-6-astra"
 AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
 VALID_REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+_REQUEST_OIDC_TOKEN: ContextVar[str] = ContextVar("request_oidc_token", default="")
 
 QuestionKey = Literal[
     "context_need",
@@ -202,10 +204,23 @@ def _valid_draft(draft: Any) -> bool:
     return isinstance(draft, str) and bool(draft.strip()) and len(draft) <= MAX_DRAFT_LENGTH
 
 
+def bind_request_oidc_token(value: str) -> Token:
+    """Bind Vercel's per-request OIDC header for the current request context."""
+    return _REQUEST_OIDC_TOKEN.set(value.strip() if isinstance(value, str) else "")
+
+
+def reset_request_oidc_token(token: Token) -> None:
+    _REQUEST_OIDC_TOKEN.reset(token)
+
+
 def _gateway_key() -> str:
+    request_token = (
+        _REQUEST_OIDC_TOKEN.get() if os.getenv("VERCEL", "").strip() == "1" else ""
+    )
     return (
         os.getenv("AI_GATEWAY_API_KEY", "").strip()
         or os.getenv("VERCEL_OIDC_TOKEN", "").strip()
+        or request_token
     )
 
 

@@ -30,6 +30,22 @@ def test_vercel_oidc_uses_ai_gateway_without_manual_api_key(monkeypatch):
     }
 
 
+def test_vercel_runtime_oidc_header_is_request_scoped(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("AI_GATEWAY_API_KEY", raising=False)
+    monkeypatch.delenv("VERCEL_OIDC_TOKEN", raising=False)
+    monkeypatch.setenv("VERCEL", "1")
+
+    binding = ai.bind_request_oidc_token("runtime-token")
+    try:
+        assert ai._gateway_key() == "runtime-token"
+        assert ai._model_name() == "openai/gpt-6-astra"
+    finally:
+        ai.reset_request_oidc_token(binding)
+
+    assert ai._gateway_key() == ""
+
+
 def test_responses_api_uses_best_model_reasoning_and_structured_output(monkeypatch):
     captured = {}
     parsed = ai.AnalyzeModelResponse(
