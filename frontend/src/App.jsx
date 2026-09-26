@@ -855,6 +855,7 @@ export default function App() {
   const [selectedTeam, setSelectedTeam] = useState(() => localStorage.getItem("sana-selected-team") || "");
   const [businessProfile, setBusinessProfile] = useState(() => readJson("sana-business-profile", { name: "", company: "", role: "", email: "", about: "" }));
   const [service, setService] = useState("checking");
+  const [progressBoard, setProgressBoard] = useState([]);
   const [editingTask, setEditingTask] = useState(null);
 
   function applySession(result) {
@@ -912,9 +913,14 @@ export default function App() {
     if (role === "student" && view === "workspace") setView("catalog");
   }, [role]);
   useEffect(() => {
+    if (!user) { setProgressBoard([]); return; }
+    api("/api/progress").then(result => setProgressBoard(result.teams || [])).catch(() => setProgressBoard([]));
+  }, [user, view]);
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [view, role]);
   const activeTeam = useMemo(() => teams.find((team) => team.id === selectedTeam), [teams, selectedTeam]);
+  const activeTeamPoints = progressBoard.find(team => team.id === selectedTeam)?.progress_points || 0;
   const nav = [
     ["home", "spark", "Главная"],
     ...(role === "business" ? [["workspace", "chat", "AI-конструктор"]] : []),
@@ -928,13 +934,13 @@ export default function App() {
     <header className="topbar">
       <button className="brand" aria-label="SaNa — главная" onClick={() => setView("home")}><BrandGlyph /><span className="brand-caption">AI БІЛІМ АГЕНТІ</span></button>
       <nav>{nav.filter(([id])=>user || ["home","catalog"].includes(id)).map(([id,icon,label]) => <button aria-label={label} aria-current={view===id?"page":undefined} className={view===id?"active":""} key={id} onClick={()=>setView(id)}><Icon name={icon}/><span>{label}</span></button>)}</nav>
-      <div className="top-actions"><span className={`service ${service}`}><i />{service === "ai" ? "AI настроен" : service === "fallback" ? "AI: резерв" : service === "offline" ? "Нет связи" : "Проверяем"}</span>{user ? <><Notifications api={api} onNavigate={setView} notify={notify}/><button className="profile-mini" onClick={()=>setView("profile")}><span>{user.name.slice(0,1)}</span><div><strong>{user.name}</strong><small>{role === "business" ? "Бизнес" : activeTeam?.name || "Студент · создайте команду"}</small></div></button></> : <button className="primary-button" onClick={()=>setView("auth")}>Войти / Регистрация</button>}</div>
+      <div className="top-actions"><span className={`service ${service}`}><i />{service === "ai" ? "AI настроен" : service === "fallback" ? "AI: резерв" : service === "offline" ? "Нет связи" : "Проверяем"}</span>{user ? <><Notifications api={api} onNavigate={setView} notify={notify}/><button className="profile-mini" onClick={()=>setView("profile")}><span>{user.name.slice(0,1)}</span><div><strong>{user.name}</strong><small>{role === "business" ? "Бизнес" : activeTeam?.name || "Студент · создайте команду"}</small></div>{role === "student" && <b>{activeTeamPoints}</b>}</button></> : <button className="primary-button" onClick={()=>setView("auth")}>Войти / Регистрация</button>}</div>
     </header>
     {sessionReady && view === "auth" && <AuthScreen api={api} Mascot={SanaMascot} onLogin={completeLogin}/>}
     {user && view === "workspace" && role === "business" && <ChatWorkspace key={editingTask?.id || "new"} notify={notify} ownerTokens={ownerTokens} setOwnerTokens={setOwnerTokens} businessProfile={businessProfile} editingTask={editingTask} onEditingFinished={()=>setEditingTask(null)} onPublished={()=>{refreshSession();setView("offers");}} />}
     {view === "catalog" && <Catalog role={user ? role : "student"} selectedTeam={user ? selectedTeam : ""} teamTokens={teamTokens} notify={notify} onProfile={() => setView(user ? "profile" : "auth")} />}
     {user && view === "offers" && <Offers role={role} ownerTokens={ownerTokens} selectedTeam={selectedTeam} teamTokens={teamTokens} teams={teams} notify={notify} onEdit={editTask} onWork={()=>setView("delivery")} />}
-    {user && view === "profile" && <AccountProfile user={user} teams={teams} api={api} refresh={refreshSession} selectedTeam={selectedTeam} selectTeam={setSelectedTeam} notify={notify} logout={logout}/>}
+    {user && view === "profile" && <AccountProfile user={user} teams={teams} api={api} refresh={refreshSession} selectedTeam={selectedTeam} selectTeam={setSelectedTeam} notify={notify} logout={logout} progressBoard={progressBoard} ownedTaskCount={Object.keys(ownerTokens).length}/>}
     {user && view === "delivery" && <Delivery user={user} api={api} notify={notify} fields={FIELD_DEFS} Mascot={SanaMascot}/>}
     {view === "home" && <Landing onStart={() => setView(user ? role === "business" ? "workspace" : "catalog" : "auth")} onCatalog={() => setView("catalog")} />}
     <Toast toast={toast} />
