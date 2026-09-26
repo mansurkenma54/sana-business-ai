@@ -43,7 +43,7 @@ h1, h2, h3 { letter-spacing: -.035em; line-height: 1.25; }
 .top-actions { margin-top: auto; display: flex; flex-direction: column; gap: 18px; padding: 20px 16px; border-top: 1px solid var(--line); }
 .service { font-size: 11px; color: var(--muted); display: flex; gap: 7px; align-items: center; }
 .service i, .live-dot i { width: 6px; height: 6px; border-radius: 50%; background: #a4afa8; }
-.service.online i { background: #0fa762; }.service.offline i { background: #cf4c40; }
+.service.ai i { background: #0fa762; }.service.fallback i { background: #d69328; }.service.offline i { background: #cf4c40; }
 .role-switch { display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: #f5f7f5; }
 .role-switch button { flex: 1; border: 0; padding: 9px 6px; border-radius: 7px; background: transparent; color: #737c76; font-size: 12px; font-weight: 700; }
 .role-switch button.active { background: var(--dark); color: #fff; }

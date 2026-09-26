@@ -41,7 +41,9 @@ def test_accounts_and_full_delivery(tmp_path, monkeypatch):
     pid=proposal["id"]
     assert friend.post(f"/api/workspaces/{pid}/submit",json={}).status_code==400
     post(business,f"/api/proposals/{pid}/decision",{"decision":"accepted"})
-    assert len(friend.get("/api/workspaces").json()["data"]["workspaces"])==1
+    friend_workspaces=friend.get("/api/workspaces").json()["data"]["workspaces"]
+    assert len(friend_workspaces)==1
+    assert friend_workspaces[0]["team"]=={"id":team["id"],"name":"Makers"}
     assert stranger.get("/api/workspaces").json()["data"]["workspaces"]==[]
     solution={"result":"Прототип готов","link":"https://example.com/result","comment":"Проверьте"}
     post(friend,f"/api/workspaces/{pid}/submit",solution)
@@ -50,6 +52,15 @@ def test_accounts_and_full_delivery(tmp_path, monkeypatch):
     post(business,f"/api/workspaces/{pid}/review",{"version":1,"decision":"returned","comment":"Добавьте мобильную версию"})
     post(student,f"/api/workspaces/{pid}/submit",solution)
     post(business,f"/api/workspaces/{pid}/review",{"version":2,"decision":"accepted","comment":"Спасибо"})
+    leaderboard=business.get("/api/progress").json()["data"]["teams"]
+    assert next(row for row in leaderboard if row["id"]==team["id"])["progress_points"]==10
+    legacy_progress=post(student,f"/api/proposals/{pid}/progress",{
+        "result":"Финальный результ",
+        "evidence_link":"https://example.com/result",
+    })["progress"]
+    post(business,f"/api/progress/{legacy_progress['id']}/decision",{"decision":"confirmed"})
+    leaderboard=business.get("/api/progress").json()["data"]["teams"]
+    assert next(row for row in leaderboard if row["id"]==team["id"])["progress_points"]==10
     history=student.get("/api/workspaces").json()["data"]["workspaces"][0]["history"]
     assert [x["status"] for x in history]==["returned","accepted"]
     assert student.post(f"/api/workspaces/{pid}/submit",json=solution).status_code==400

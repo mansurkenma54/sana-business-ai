@@ -17,7 +17,7 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
   <img alt="OpenAI Responses API" src="https://img.shields.io/badge/OpenAI-Responses_API-111827?logo=openai&logoColor=white">
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Neon-4169e1?logo=postgresql&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-27_passed-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-32_passed-16a34a">
 </p>
 
 ![Главная страница SaNa](docs/images/sana-home.png)
@@ -188,8 +188,8 @@ flowchart TB
 ### Windows PowerShell
 
 ```powershell
-git clone https://github.com/BAITC-Hacks/hack-2036a781-sana.git
-cd hack-2036a781-sana
+git clone https://github.com/mansurkenma54/sana-ai-platform.git
+cd sana-ai-platform
 
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -207,8 +207,8 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ### macOS / Linux
 
 ```bash
-git clone https://github.com/BAITC-Hacks/hack-2036a781-sana.git
-cd hack-2036a781-sana
+git clone https://github.com/mansurkenma54/sana-ai-platform.git
+cd sana-ai-platform
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -259,7 +259,7 @@ Production-сборка создаётся командой `npm run build` и �
 
 ### 1. Проверить AI-конструктор
 
-1. Откройте [production-сайт](https://sana-hackalem.vercel.app) или локальную версию.
+1. Откройте [production-сайт](https://sana-ai-platform.vercel.app) или локальную версию.
 2. Нажмите **«Создать задачу»**.
 3. Нажмите **«Загрузить пример»** или напишите: `Нужно сократить время проверки домашних работ по Python`.
 4. Отправьте сообщение и ответьте на уточняющие вопросы. Можно выбирать один из трёх предложенных вариантов.
@@ -295,7 +295,7 @@ Production-сборка создаётся командой `npm run build` и �
 1. Вернитесь к роли **«Бизнес»**.
 2. Откройте **«Мои задачи»**.
 3. Примите или отклоните предложение вручную.
-4. Для принятой команды отправьте результат этапа, затем подтвердите его бизнесом.
+4. Откройте **«Работа и решения»**: команда отправляет ссылку на результат, а бизнес вручную принимает его или возвращает на доработку.
 5. Проверьте начисление 10 баллов в таблице прогресса.
 
 ### Надёжная демонстрация без интернета
@@ -308,6 +308,8 @@ AI_MODE=fallback
 
 В этом режиме полный сценарий доступен без OpenAI: используются локальные вопросы, варианты ответов и безопасная сборка карточки из введённых фактов.
 
+Для реальных AI-ответов укажите `OPENAI_API_KEY` в `.env` и оставьте `AI_MODE=` пустым. `GET /api/health` безопасно показывает `ai_mode`, `ai_reason` и `ai_model`, но никогда не возвращает ключ.
+
 ## Автоматические проверки
 
 ```bash
@@ -317,7 +319,7 @@ python -m pytest -q
 Ожидаемый результат:
 
 ```text
-27 passed
+32 passed
 ```
 
 Дополнительные проверки:
@@ -330,14 +332,14 @@ curl http://127.0.0.1:8000/api/health
 Ожидаемый health-check при Neon/PostgreSQL:
 
 ```json
-{"status":"ok","storage":"postgresql"}
+{"status":"ok","storage":"postgresql","ai_mode":"openai","ai_reason":"configured","ai_model":"gpt-6-astra"}
 ```
 
 ## Основные API-методы
 
 | Метод | Endpoint | Что проверяет |
 | --- | --- | --- |
-| `GET` | `/api/health` | Состояние сервера и тип хранилища |
+| `GET` | `/api/health` | Состояние сервера, хранилища и конфигурации AI |
 | `POST` | `/api/analyze` | Анализ черновика и уточняющие вопросы |
 | `POST` | `/api/build-card` | Сборка карточки только из пользовательских фактов |
 | `POST` | `/api/edit-card-field` | AI-редактирование выбранного поля |
@@ -366,7 +368,7 @@ Hackalem/
 ├── frontend/
 │   ├── src/App.jsx             # интерфейс и пользовательские сценарии
 │   └── src/styles.css          # адаптивный дизайн SaNa
-├── tests/                      # 27 автоматических проверок
+├── tests/                      # 32 автоматических проверок
 ├── docs/                       # контракт, аудит кейса и документация
 ├── data/                       # синтетические примеры, не production-данные
 ├── api/index.py                # входная точка Vercel
@@ -389,7 +391,7 @@ Hackalem/
 
 ## Деплой
 
-Рабочая версия: **<https://sana-hackalem.vercel.app>**
+Рабочая версия: **<https://sana-ai-platform.vercel.app>**
 
 Vercel выполняет `npm run build`, публикует React-сборку из `app/static/` и направляет API-запросы в `api/index.py`. Для production необходимо задать `OPENAI_API_KEY` и `DATABASE_URL` в переменных окружения проекта Vercel.
 

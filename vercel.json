@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "app/static",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 180,
+      "excludeFiles": "{tests/**,docs/**,frontend/**,tmp/**,.sana-data/**}"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

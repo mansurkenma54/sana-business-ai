@@ -707,7 +707,7 @@ function BusinessOffers({ ownerTokens, notify, onEdit, teams, onWork }) {
     <div className="offer-groups">{groups.map(({ task, proposals }) => <section className="offer-group" key={task.id}>
       <header><div><span className="eyebrow">{INDUSTRIES[task.industry]}</span><h2>{task.title}</h2><button className="text-button" type="button" onClick={() => onEdit(task)}>Редактировать и пересчитать рейтинг</button></div><div className="offer-count">{proposals.length}<small>откликов</small></div></header>
       {!proposals.length ? <p className="soft-empty">Откликов пока нет — задача доступна всем командам.</p> : proposals.map((proposal) => <article className="offer-card" key={proposal.id}>
-        <div className="offer-head"><strong>{teams.find((team) => team.id === proposal.team_id)?.name || `Команда ${proposal.team_id}`}</strong><span className={`status ${proposal.status}`}>{proposal.status === "new" ? "Новое" : proposal.status === "accepted" ? "Выбрано" : "Отклонено"}</span></div>
+        <div className="offer-head"><strong>{leaderboard.find((team) => team.id === proposal.team_id)?.name || `Команда ${proposal.team_id}`}</strong><span className={`status ${proposal.status}`}>{proposal.status === "new" ? "Новое" : proposal.status === "accepted" ? "Выбрано" : "Отклонено"}</span></div>
         <p><b>Идея:</b> {proposal.idea}</p><p><b>План:</b> {proposal.plan}</p><div className="offer-meta"><span>Срок: {proposal.deadline}</span><a href={proposal.link} target="_blank" rel="noreferrer">Прототип ↗</a></div>
         {proposal.status === "new" && <div className="button-row"><button className="primary-button small" onClick={() => decide(task.id, proposal.id, "accepted")}>Выбрать</button><button className="ghost-button" onClick={() => decide(task.id, proposal.id, "rejected")}>Отклонить</button></div>}
         {proposal.status === "accepted" && <button className="primary-button small" onClick={onWork}>Открыть работу и решения →</button>}
@@ -903,7 +903,9 @@ export default function App() {
     setToast({ text, error }); window.clearTimeout(window.__sanaToast); window.__sanaToast = window.setTimeout(() => setToast(null), 3500);
   }
   useEffect(() => {
-    api("/api/health").then(() => setService("online")).catch(() => setService("offline"));
+    api("/api/health")
+      .then((health) => setService(health.ai_mode === "openai" ? "ai" : "fallback"))
+      .catch(() => setService("offline"));
     refreshSession().catch(()=>setSessionReady(true));
   }, []);
   useEffect(() => {
@@ -926,7 +928,7 @@ export default function App() {
     <header className="topbar">
       <button className="brand" aria-label="SaNa — главная" onClick={() => setView("home")}><BrandGlyph /><span className="brand-caption">AI БІЛІМ АГЕНТІ</span></button>
       <nav>{nav.filter(([id])=>user || ["home","catalog"].includes(id)).map(([id,icon,label]) => <button aria-label={label} aria-current={view===id?"page":undefined} className={view===id?"active":""} key={id} onClick={()=>setView(id)}><Icon name={icon}/><span>{label}</span></button>)}</nav>
-      <div className="top-actions"><span className={`service ${service}`}><i />{service === "online" ? "Сервер работает" : service === "offline" ? "Нет связи" : "Проверяем"}</span>{user ? <><Notifications api={api} onNavigate={setView} notify={notify}/><button className="profile-mini" onClick={()=>setView("profile")}><span>{user.name.slice(0,1)}</span><div><strong>{user.name}</strong><small>{role === "business" ? "Бизнес" : activeTeam?.name || "Студент · создайте команду"}</small></div></button></> : <button className="primary-button" onClick={()=>setView("auth")}>Войти / Регистрация</button>}</div>
+      <div className="top-actions"><span className={`service ${service}`}><i />{service === "ai" ? "AI настроен" : service === "fallback" ? "AI: резерв" : service === "offline" ? "Нет связи" : "Проверяем"}</span>{user ? <><Notifications api={api} onNavigate={setView} notify={notify}/><button className="profile-mini" onClick={()=>setView("profile")}><span>{user.name.slice(0,1)}</span><div><strong>{user.name}</strong><small>{role === "business" ? "Бизнес" : activeTeam?.name || "Студент · создайте команду"}</small></div></button></> : <button className="primary-button" onClick={()=>setView("auth")}>Войти / Регистрация</button>}</div>
     </header>
     {sessionReady && view === "auth" && <AuthScreen api={api} Mascot={SanaMascot} onLogin={completeLogin}/>}
     {user && view === "workspace" && role === "business" && <ChatWorkspace key={editingTask?.id || "new"} notify={notify} ownerTokens={ownerTokens} setOwnerTokens={setOwnerTokens} businessProfile={businessProfile} editingTask={editingTask} onEditingFinished={()=>setEditingTask(null)} onPublished={()=>{refreshSession();setView("offers");}} />}

@@ -201,7 +201,7 @@ def home() -> FileResponse:
 @app.get("/api/health")
 def health() -> dict[str, str]:
     store.initialize_database()
-    return {"status": "ok", "storage": store.storage_backend()}
+    return {"status": "ok", "storage": store.storage_backend(), **ai.runtime_status()}
 
 
 @app.post("/api/analyze")
@@ -520,10 +520,27 @@ async def decide_progress(progress_id: str, request: Request) -> JSONResponse:
 @app.get("/api/progress")
 def progress_leaderboard() -> JSONResponse:
     points_by_team = {}
+    confirmed_proposals = set()
     for item in store.load_progress():
         if item.get("status") == "confirmed":
             team_id = item.get("team_id")
             points_by_team[team_id] = points_by_team.get(team_id, 0) + int(item.get("points", 0))
+            confirmed_proposals.add(item.get("proposal_id"))
+
+    # The account workflow stores final solutions separately from the legacy
+    # stage-progress flow. Count an accepted final solution once, while avoiding
+    # duplicate points when the same proposal already has confirmed progress.
+    proposals = {item.get("id"): item for item in store.load_proposals()}
+    submissions = store.workflow_state().get("submissions", {})
+    for proposal_id, history in submissions.items():
+        if proposal_id in confirmed_proposals or not history:
+            continue
+        proposal = proposals.get(proposal_id)
+        if not proposal or history[-1].get("status") != "accepted":
+            continue
+        team_id = proposal.get("team_id")
+        if team_id:
+            points_by_team[team_id] = points_by_team.get(team_id, 0) + PROGRESS_POINTS_PER_CONFIRMED_STAGE
     teams = []
     for team in store.load_teams():
         teams.append({**_public_record(team), "progress_points": points_by_team.get(team.get("id"), 0)})

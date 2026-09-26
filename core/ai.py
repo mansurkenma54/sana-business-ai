@@ -215,6 +215,24 @@ def _client() -> OpenAI | None:
         return None
 
 
+def runtime_status() -> dict[str, str]:
+    """Return safe AI configuration diagnostics without exposing credentials."""
+    forced_fallback = os.getenv("AI_MODE", "").strip().casefold() == "fallback"
+    has_api_key = bool(os.getenv("OPENAI_API_KEY", "").strip())
+    if forced_fallback:
+        mode, reason = "fallback", "forced_by_ai_mode"
+    elif not has_api_key:
+        mode, reason = "fallback", "missing_api_key"
+    else:
+        mode, reason = "openai", "configured"
+    return {
+        "ai_mode": mode,
+        "ai_reason": reason,
+        "ai_model": os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
+        or DEFAULT_OPENAI_MODEL,
+    }
+
+
 def _reasoning_effort() -> str:
     effort = os.getenv("OPENAI_REASONING_EFFORT", "max").strip().casefold()
     return effort if effort in VALID_REASONING_EFFORTS else "max"

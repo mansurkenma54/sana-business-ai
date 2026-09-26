@@ -121,7 +121,11 @@ def workspaces(request: Request):
             continue
         task = store.get_task(proposal["task_id"])
         task = {k: v for k, v in task.items() if k not in {"owner_token_hash", "owner_id"}}
-        items.append({"proposal": proposal, "task": task,
+        team = store.get_team(proposal["team_id"])
+        public_team = {"id": proposal["team_id"], "name": team.get("name", proposal["team_id"])} if team else {
+            "id": proposal["team_id"], "name": proposal["team_id"]
+        }
+        items.append({"proposal": proposal, "task": task, "team": public_team,
                       "history": state.get("submissions", {}).get(proposal["id"], []),
                       "messages": state.get("coach", {}).get(proposal["id"], [])})
     return success({"workspaces": items})
