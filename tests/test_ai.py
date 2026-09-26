@@ -21,11 +21,11 @@ def test_vercel_oidc_uses_ai_gateway_without_manual_api_key(monkeypatch):
     assert ai._client() is fake_client
     assert captured["api_key"] == "temporary-oidc-token"
     assert captured["base_url"] == ai.AI_GATEWAY_BASE_URL
-    assert ai._model_name() == "openai/gpt-6-astra"
+    assert ai._model_name() == ai.DEFAULT_AI_GATEWAY_MODEL
     assert ai.runtime_status() == {
         "ai_mode": "openai",
         "ai_reason": "configured",
-        "ai_model": "openai/gpt-6-astra",
+        "ai_model": ai.DEFAULT_AI_GATEWAY_MODEL,
         "ai_provider": "vercel_gateway",
     }
 
@@ -39,7 +39,7 @@ def test_vercel_runtime_oidc_header_is_request_scoped(monkeypatch):
     binding = ai.bind_request_oidc_token("runtime-token")
     try:
         assert ai._gateway_key() == "runtime-token"
-        assert ai._model_name() == "openai/gpt-6-astra"
+        assert ai._model_name() == ai.DEFAULT_AI_GATEWAY_MODEL
     finally:
         ai.reset_request_oidc_token(binding)
 
@@ -73,6 +73,33 @@ def test_responses_api_uses_best_model_reasoning_and_structured_output(monkeypat
     assert captured["reasoning"] == {"effort": "max"}
     assert captured["text_format"] is ai.AnalyzeModelResponse
     assert captured["store"] is False
+
+
+def test_gateway_model_uses_plain_json_then_validates_schema(monkeypatch):
+    captured = {}
+
+    class FakeResponses:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(
+                output_text='''```json
+{"questions":[{"key":"data_materials","question":"Қандай дерек бар?","suggestions":["Мысалдар бар.","Сипаттама бар.","Әзірге жоқ."]},{"key":"expected_result","question":"Қандай нәтиже керек?","suggestions":["Прототип.","Зерттеу.","Жоспар."]},{"key":"success_criteria","question":"Табыс қалай өлшенеді?","suggestions":["Жылдамырақ.","Қате аз.","Қабылданды."]}]}
+```'''
+            )
+
+    monkeypatch.setattr(ai, "_client", lambda: SimpleNamespace(responses=FakeResponses()))
+    monkeypatch.setattr(ai, "_uses_gateway", lambda: True)
+    monkeypatch.setattr(ai, "_model_name", lambda: ai.DEFAULT_AI_GATEWAY_MODEL)
+
+    result = ai._ask_model(
+        "system", {"draft": "Жоба"}, ai.AnalyzeModelResponse, "max"
+    )
+
+    assert result is not None
+    assert len(result["questions"]) == 3
+    assert captured["model"] == ai.DEFAULT_AI_GATEWAY_MODEL
+    assert captured["reasoning"] == {"effort": "high"}
+    assert "Return only one valid JSON object" in captured["input"][0]["content"]
 
 
 def test_invalid_reasoning_settings_are_safely_bounded(monkeypatch):

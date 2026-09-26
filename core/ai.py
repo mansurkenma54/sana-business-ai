@@ -36,6 +36,7 @@ CARD_FIELDS = (
 )
 VALID_KEYS = {metric[0] for metric in METRICS}
 DEFAULT_OPENAI_MODEL = "gpt-6-astra"
+DEFAULT_AI_GATEWAY_MODEL = "inclusionai/ling-3.0-flash-sante-free"
 AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
 VALID_REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 _REQUEST_OIDC_TOKEN: ContextVar[str] = ContextVar("request_oidc_token", default="")
@@ -229,9 +230,13 @@ def _uses_gateway() -> bool:
 
 
 def _model_name() -> str:
-    model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
     if _uses_gateway():
+        model = (
+            os.getenv("AI_GATEWAY_MODEL", DEFAULT_AI_GATEWAY_MODEL).strip()
+            or DEFAULT_AI_GATEWAY_MODEL
+        )
         return model if "/" in model else f"openai/{model}"
+    model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
     return model.removeprefix("openai/")
 
 
@@ -287,6 +292,65 @@ def _max_output_tokens() -> int:
     return min(max(value, 512), 16000)
 
 
+def _extract_json_object(text: str) -> dict | None:
+    """Extract one JSON object from a provider's plain-text response."""
+    candidate = text.strip()
+    if candidate.startswith("```"):
+        lines = candidate.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        candidate = "\n".join(lines).strip()
+    try:
+        value = json.loads(candidate)
+    except json.JSONDecodeError:
+        start, end = candidate.find("{"), candidate.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            value = json.loads(candidate[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return value if isinstance(value, dict) else None
+
+
+def _ask_gateway_json(
+    client: OpenAI,
+    system_prompt: str,
+    payload: dict,
+    response_type: type[ModelResponse],
+    reasoning_effort: str | None,
+) -> dict | None:
+    """Use schema-validated JSON with Gateway models lacking Structured Outputs."""
+    schema = json.dumps(response_type.model_json_schema(), ensure_ascii=False)
+    effort = reasoning_effort if reasoning_effort in VALID_REASONING_EFFORTS else _reasoning_effort()
+    if effort in {"xhigh", "max"}:
+        effort = "high"
+    response = client.responses.create(
+        model=_model_name(),
+        reasoning={"effort": effort},
+        max_output_tokens=_max_output_tokens(),
+        store=False,
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    system_prompt
+                    + "\nReturn only one valid JSON object. Do not use Markdown or add commentary. "
+                    + "The JSON must match this schema exactly:\n"
+                    + schema
+                ),
+            },
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ],
+    )
+    value = _extract_json_object(response.output_text)
+    if value is None:
+        return None
+    return response_type.model_validate(value).model_dump()
+
+
 def _ask_model(
     system_prompt: str,
     payload: dict,
@@ -297,6 +361,10 @@ def _ask_model(
     if client is None:
         return None
     try:
+        if _uses_gateway():
+            return _ask_gateway_json(
+                client, system_prompt, payload, response_type, reasoning_effort
+            )
         response = client.responses.parse(
             model=_model_name(),
             reasoning={

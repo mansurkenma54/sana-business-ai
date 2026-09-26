@@ -245,7 +245,8 @@ Production-сборка создаётся командой `npm run build` и �
 | --- | :---: | --- |
 | `OPENAI_API_KEY` | Нет | Включает реальные AI-ответы |
 | `AI_GATEWAY_API_KEY` | Нет | Vercel AI Gateway для локального запуска; в production вместо него автоматически используется OIDC |
-| `OPENAI_MODEL` | Нет | Модель; значение проекта по умолчанию — `gpt-6-astra` |
+| `AI_GATEWAY_MODEL` | Нет | Модель Gateway; по умолчанию — бесплатная `inclusionai/ling-3.0-flash-sante-free` |
+| `OPENAI_MODEL` | Нет | Модель для прямого OpenAI API; по умолчанию — `gpt-6-astra` |
 | `OPENAI_REASONING_EFFORT` | Нет | `medium`, `high`, `xhigh` или `max` |
 | `OPENAI_MAX_OUTPUT_TOKENS` | Нет | Ограничение токенов ответа, по умолчанию 6000 |
 | `REQUEST_TIMEOUT_SECONDS` | Нет | Таймаут запроса к AI, максимум 180 секунд |
@@ -320,7 +321,7 @@ python -m pytest -q
 Ожидаемый результат:
 
 ```text
-34 passed
+35 passed
 ```
 
 Дополнительные проверки:
@@ -333,7 +334,7 @@ curl http://127.0.0.1:8000/api/health
 Ожидаемый health-check при Neon/PostgreSQL:
 
 ```json
-{"status":"ok","storage":"postgresql","ai_mode":"openai","ai_reason":"configured","ai_model":"openai/gpt-6-astra","ai_provider":"vercel_gateway"}
+{"status":"ok","storage":"postgresql","ai_mode":"openai","ai_reason":"configured","ai_model":"inclusionai/ling-3.0-flash-sante-free","ai_provider":"vercel_gateway"}
 ```
 
 ## Основные API-методы
@@ -394,7 +395,7 @@ Hackalem/
 
 Рабочая версия: **<https://sana-ai-platform.vercel.app>**
 
-Vercel выполняет `npm run build`, публикует React-сборку из `app/static/` и направляет API-запросы в `api/index.py`. AI работает через Vercel AI Gateway и автоматически выдаваемый OIDC-токен; при необходимости прямой `OPENAI_API_KEY` имеет приоритет. Для постоянного хранения production необходимо подключить Neon/PostgreSQL, чтобы проект получил `DATABASE_URL`.
+Vercel выполняет `npm run build`, публикует React-сборку из `app/static/` и направляет API-запросы в `api/index.py`. AI работает через Vercel AI Gateway и автоматически выдаваемый OIDC-токен; бесплатная Gateway-модель используется без отдельного секрета. Прямой `OPENAI_API_KEY` имеет приоритет и включает `gpt-6-astra`. Для постоянного хранения production необходимо подключить Neon/PostgreSQL, чтобы проект получил `DATABASE_URL`.
 
 ## Ограничения MVP
 
