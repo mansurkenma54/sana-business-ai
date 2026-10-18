@@ -20,4 +20,6 @@ Thumbs.db
 
 *.log
 tmp/
+.codex-finalizer/
+.chart-data-*/
 .vercel_python_packages/
