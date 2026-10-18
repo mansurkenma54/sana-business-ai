@@ -385,3 +385,29 @@ select { appearance: none; -webkit-appearance: none; background-image: url("data
   .profile-content-grid { margin-top:14px; gap:14px; }.profile-details-card,.team-action-card,.profile-guide-card { padding:20px; }.section-heading { align-items:flex-start; }.completion-chip { font-size:10px; }.profile-save-row,.team-card-footer { align-items:stretch; flex-direction:column; }.profile-save-row .primary-button { width:100%; }.join-form { grid-template-columns:1fr; }.join-form button { margin:0; }.profile-guide-card { min-height:0; padding-top:82px; }.teams-overview { margin-top:26px; }.teams-overview>.section-heading { align-items:flex-start; flex-direction:column; }.team-profile-list .team-section { padding:18px; }.team-card-footer>div:last-child { justify-content:stretch; }.team-card-footer button { flex:1; }.notification-trigger { width:42px; min-height:42px; justify-content:center; padding:9px; }.notification-trigger>span { display:none; }.notification-trigger b { position:absolute; right:-5px; top:-6px; min-width:18px; height:18px; margin:0; }.notification-menu { position:fixed; left:12px; right:12px; top:74px; bottom:auto; width:auto; max-height:calc(100dvh - 90px); }.profile-mini>b { display:none; }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; } }
+
+/* SaNa Business: a coherent business shell across all workspaces. */
+.app-business { --ink:#18372e; --green:#24573f; --bright:#c7ef6a; --dark:#18372e; background:#f6f7f0; min-height:100dvh; }
+.app-business .topbar { background:#f9faf5; border-color:#dfe4d8; }
+.app-business .brand { background:transparent; align-items:flex-start; color:#18372e; padding:0; margin:30px 25px; border-radius:0; }
+.business-wordmark { display:flex; align-items:center; gap:2px; font-size:37px; letter-spacing:-2.6px; font-weight:800; line-height:1; }
+.business-wordmark .brand-dot { color:#477b41; font-size:30px; margin:0 0 0 2px; }
+.business-wordmark small { font-size:9px; letter-spacing:1.5px; align-self:flex-end; padding:0 0 4px 7px; font-weight:800; }
+.app-business .brand-caption { font-size:6px; letter-spacing:.7px; color:#6d7f6a; margin-top:7px; }
+.app-business .topbar nav button.active { background:#e9efdd; color:#18372e; }
+.app-business .primary-button { background:#c7ef6a; color:#18372e; border-color:#c7ef6a; }
+.app-business .primary-button:hover { background:#b9e45a; }
+.app-business .dark-button { background:#18372e; }
+.app-business .workspace-intro h1 { font-size:clamp(25px,3vw,38px); }
+.app-business .catalog-intro,.app-business .profile-intro { color:#18372e; }
+.app-business.app-landing .topbar { padding:20px max(4%,calc((100% - 1340px)/2)); gap:25px; }
+.app-business.app-landing .brand { margin:0; }
+.app-business.app-landing .top-actions { display:flex; flex-direction:row; align-items:center; border:0; padding:0; margin:0; gap:20px; }
+.app-business.app-landing .top-actions>.primary-button { font-size:12px; padding:12px 16px; white-space:nowrap; }
+.app-business.app-landing .service { white-space:nowrap; font-size:10px; }
+.app-business.app-landing .topbar nav { gap:3px; }
+.app-business.app-landing .topbar nav button { font-size:12px; padding:11px 13px; }
+.app-business .toast { z-index:100; }
+@media(min-width:1100px) { .app-business.app-landing:has(.profile-mini) .topbar { flex-wrap:wrap; }.app-business.app-landing:has(.profile-mini) .topbar nav { order:3; width:100%; margin:0; }.app-business.app-landing:has(.profile-mini) .top-actions { margin-left:auto; } }
+@media(max-width:1000px) { .app-business.app-landing .service { display:none; }.app-business.app-landing .topbar { flex-wrap:wrap; padding:18px 4%; gap:16px; }.app-business.app-landing .topbar nav { order:3; width:100%; margin:0; overflow-x:auto; }.app-business.app-landing .top-actions { margin-left:auto; }.app-business.app-landing .topbar nav button { flex:0 0 auto; } }
+@media(max-width:680px) { .app-business .brand { margin:16px; }.app-business.app-landing .brand { margin:0; }.app-business .business-wordmark { font-size:30px; }.app-business .business-wordmark small { font-size:8px; }.app-business.app-landing .topbar nav button { font-size:11px; padding:10px 12px; }.app-business.app-landing .top-actions>.primary-button { padding:10px 12px; font-size:10px; }.app-business .workspace-intro h1 { font-size:25px; }.app-business.app-landing .profile-mini div { display:none; }.app-business.app-landing .top-actions { gap:10px; } }

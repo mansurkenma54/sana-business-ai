@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.prompts import ANALYZE_SYSTEM_PROMPT, BUILD_CARD_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, EDIT_FIELD_SYSTEM_PROMPT
+from core.prompts import ANALYZE_SYSTEM_PROMPT, BUILD_CARD_SYSTEM_PROMPT, BUSINESS_PRIORITY_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, EDIT_FIELD_SYSTEM_PROMPT
 from core.rating import METRICS, calculate_rating, missing_fields
 
 
@@ -105,12 +105,20 @@ class CoachResponse(BaseModel):
     text: str = Field(min_length=1, max_length=6000)
 
 
+class BusinessPriorityResponse(BaseModel):
+    """Only reviewed identifiers can leave the business model boundary."""
+    model_config = ConfigDict(extra="forbid")
+
+    action_ids: list[Literal["revenue", "costs", "time"]] = Field(min_length=3, max_length=3)
+    question_ids: list[Literal["baseline", "data", "budget", "approval", "constraints"]] = Field(min_length=3, max_length=5)
+
+
 ModelResponse = TypeVar("ModelResponse", bound=BaseModel)
 
 FALLBACK_QUESTIONS = {
     "context_need": "Что происходит сейчас и что именно вы хотите изменить?",
     "data_materials": "Какие данные, примеры или материалы вы готовы предоставить?",
-    "expected_result": "Какой конкретный результат вы ожидаете от студенческой команды?",
+    "expected_result": "Какой конкретный результат вы ожидаете от команды внедрения?",
     "success_criteria": "По каким измеримым признакам вы поймёте, что результат подходит?",
     "constraints": "Какие сроки, технологии, доступы или другие ограничения нужно учесть?",
     "users": "Кто будет пользоваться предлагаемым решением?",
@@ -121,7 +129,7 @@ FALLBACK_QUESTIONS_I18N = {
     "kk": {
         "context_need": "Қазір не болып жатыр және нақты нені өзгерткіңіз келеді?",
         "data_materials": "Қандай деректерді, мысалдарды немесе материалдарды бере аласыз?",
-        "expected_result": "Студенттер командасынан қандай нақты нәтиже күтесіз?",
+        "expected_result": "Енгізу командасынан қандай нақты нәтиже күтесіз?",
         "success_criteria": "Нәтиженің сәйкес екенін қандай өлшенетін белгілерден білесіз?",
         "constraints": "Қандай мерзім, технология, қолжетімділік немесе басқа шектеу бар?",
         "users": "Ұсынылған шешімді кім қолданады?",
@@ -130,7 +138,7 @@ FALLBACK_QUESTIONS_I18N = {
     "en": {
         "context_need": "What is happening now, and what exactly would you like to change?",
         "data_materials": "What data, examples, or materials can you provide?",
-        "expected_result": "What specific result do you expect from the student team?",
+        "expected_result": "What specific result do you expect from the implementation team?",
         "success_criteria": "Which measurable signs will show that the result meets your needs?",
         "constraints": "Which deadlines, technologies, access requirements, or other constraints apply?",
         "users": "Who will use the proposed solution?",
@@ -165,9 +173,9 @@ FALLBACK_SUGGESTIONS_I18N = {
             "Жёстких ограничений пока нет, их согласуем после первого прототипа.",
         ],
         "users": [
-            "Основные пользователи — преподаватели и методисты.",
-            "Решением будут пользоваться студенты и преподаватели.",
-            "Сначала прототип проверит небольшая пилотная группа.",
+            "Основные пользователи — сотрудники, которые сейчас выполняют процесс вручную.",
+            "Решением будут пользоваться владелец бизнеса и администратор.",
+            "Сначала прототип проверит небольшая пилотная группа сотрудников.",
         ],
         "business_link": [
             "Контактное лицо будет отвечать в чате и проводить встречу раз в неделю.",
@@ -181,7 +189,7 @@ FALLBACK_SUGGESTIONS_I18N = {
         "expected_result": ["We need a working prototype for user testing.", "We need problem research and a validated solution concept.", "We need recommendations, an implementation plan, and a demo mockup."],
         "success_criteria": ["Users complete the task faster with fewer errors.", "At least five users successfully test the prototype.", "The customer accepts the demo against an agreed scenario."],
         "constraints": ["The deadline is four weeks and only anonymized data may be used.", "The solution must run in a browser without paid services.", "There are no strict constraints yet; we will agree them after the first prototype."],
-        "users": ["The main users are teachers and methodologists.", "Students and teachers will use the solution.", "A small pilot group will test the first version."],
+        "users": ["The main users are staff who currently perform the process manually.", "The business owner and administrator will use the solution.", "A small staff pilot group will test the first version."],
         "business_link": ["A contact person will answer in chat and meet weekly.", "The team will receive written feedback after each stage.", "One kickoff meeting and one final demo are available."],
     },
     "kk": {
@@ -190,7 +198,7 @@ FALLBACK_SUGGESTIONS_I18N = {
         "expected_result": ["Пайдаланушыларға көрсетуге болатын жұмыс прототипі керек.", "Мәселені зерттеу және тексерілген шешім тұжырымдамасы керек.", "Ұсынымдар, енгізу жоспары және демо-макет керек."],
         "success_criteria": ["Пайдаланушылар жұмысты жылдам әрі аз қатемен орындайды.", "Кемінде бес пайдаланушы прототипті сәтті тексереді.", "Тапсырыс беруші келісілген сценарий бойынша демонстрацияны қабылдайды."],
         "constraints": ["Мерзім — төрт апта, тек иесіздендірілген деректер қолданылады.", "Шешім ақылы сервистерсіз браузерде жұмыс істеуі керек.", "Қатаң шектеулер әзірге жоқ, оларды алғашқы прототиптен кейін келісеміз."],
-        "users": ["Негізгі пайдаланушылар — оқытушылар мен әдіскерлер.", "Шешімді студенттер мен оқытушылар қолданады.", "Алғашқы нұсқаны шағын пилоттық топ тексереді."],
+        "users": ["Негізгі пайдаланушылар — үдерісті қазір қолмен орындайтын қызметкерлер.", "Шешімді бизнес иесі мен әкімші қолданады.", "Алғашқы нұсқаны қызметкерлердің шағын пилоттық тобы тексереді."],
         "business_link": ["Байланыс тұлғасы чатта жауап беріп, апта сайын кездесу өткізеді.", "Команда әр кезеңнен кейін жазбаша кері байланыс алады.", "Бір бастапқы кездесу және бір финалдық көрсетілім қолжетімді."],
     },
 }
@@ -389,8 +397,27 @@ def _ask_model(
         return parsed.model_dump()
     except Exception:
         # Network, provider, refusal, and malformed-response errors use the safe fallback.
-        LOGGER.warning("OpenAI structured response failed; using fallback.", exc_info=True)
+        # Provider exception messages can echo private request content.
+        LOGGER.warning("OpenAI structured response failed; using fallback.")
         return None
+
+
+def prioritize_business_actions(payload: dict) -> dict | None:
+    """Rank reviewed SME pilot options without generating facts or promises.
+
+    Uses the existing credential, timeout, no-store and fallback configuration.
+    No caller should rely on a model response when the structure is invalid.
+    """
+    result = _ask_model(BUSINESS_PRIORITY_SYSTEM_PROMPT, payload, BusinessPriorityResponse, "high")
+    if result is None:
+        return None
+    try:
+        selected = BusinessPriorityResponse.model_validate(result).model_dump()
+    except (TypeError, ValueError):
+        return None
+    if len(set(selected["action_ids"])) != 3 or len(set(selected["question_ids"])) != len(selected["question_ids"]):
+        return None
+    return selected
 
 
 def _baseline_missing(draft: str) -> list[str]:

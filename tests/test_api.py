@@ -20,7 +20,7 @@ def test_health_and_home(client):
     }
     home = client.get("/")
     assert home.status_code == 200
-    assert "Sana" in home.text
+    assert "SaNa Business" in home.text
 
 
 def test_analyze_returns_three_fallback_questions(client):

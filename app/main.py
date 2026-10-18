@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from core import ai, store, accounts
 from core.rating import calculate_rating
 from app.account_routes import router as account_router, COOKIE
+from app.business_routes import router as business_router
 
 
 LOGGER = logging.getLogger(__name__)
@@ -38,12 +39,13 @@ MAX_PROPOSAL_TEXT_LENGTH = 2000
 PROGRESS_POINTS_PER_CONFIRMED_STAGE = 10
 
 app = FastAPI(
-    title="Sana",
-    description="Практикалық білім міндеттерінің ашық каталогы",
-    version="0.1.0",
+    title="SaNa Business AI",
+    description="AI-диагностика, өлшенетін пилот және Тараз бен Жамбыл облысының шағын бизнесіне арналған енгізу жобалары",
+    version="2.0.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
 app.include_router(account_router)
+app.include_router(business_router)
 
 
 @app.middleware("http")
@@ -68,7 +70,7 @@ async def account_session(request: Request, call_next):
             origin = request.headers.get("origin")
             if request.headers.get("X-Sana-Request") != "1" or (origin and origin != str(request.base_url).rstrip("/")):
                 return JSONResponse({"ok": False, "error": {"message": "Обновите страницу и повторите запрос."}}, status_code=403)
-        public = path in {"/api/health", "/api/auth/me", "/api/auth/login", "/api/auth/register"} or (
+        public = path in {"/api/health", "/api/auth/me", "/api/auth/login", "/api/auth/register", "/api/business/templates", "/api/business/diagnose"} or (
             request.method == "GET" and (path == "/api/tasks" or (path.startswith("/api/tasks/") and path.count("/") == 3)))
         if not public and not request.state.user and not legacy:
             return JSONResponse({"ok": False, "error": {"message": "Войдите в аккаунт."}}, status_code=401)
